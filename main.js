@@ -38,6 +38,13 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  // Notify renderer to save state before closing
+  mainWindow.on('close', (e) => {
+    if (mainWindow) {
+      mainWindow.webContents.executeJavaScript('window.dispatchEvent(new Event("beforeunload"));');
+    }
+  });
 }
 
 // This method will be called when Electron has finished initialization

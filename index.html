@@ -5,18 +5,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StudySet - A Quizlet Clone</title>
+    <meta name="description" content="Create and master your flashcards with SM-2 spaced repetition">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
 
-        .star-btn.starred svg {
-            fill: #facc15;
-            /* yellow-400 */
-            stroke: #facc15;
-            /* yellow-400 */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* Flashcard Flip Animation */
+        .flashcard-container {
+            perspective: 1000px;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flashcard-container.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front,
+        .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
         }
 
         /* Progress Bar Animation */
@@ -35,1107 +74,714 @@
         }
 
         .progress-animating {
-            background: linear-gradient(270deg, #22c55e, #4f46e5, #22c55e);
-            background-size: 200% 200%;
+            background: linear-gradient(270deg, #22c55e, #4f46e5, #22c55e) !important;
+            background-size: 200% 200% !important;
             animation: progressPulse 1s ease infinite;
         }
 
-        /* Persistent Feedback Colors (Override Hover) */
+        /* Feedback Colors */
         .feedback-correct {
             background-color: #dcfce7 !important;
-            /* green-100 */
             border-color: #16a34a !important;
-            /* green-600 */
             color: #14532d !important;
-            /* green-900 */
-            cursor: default !important;
         }
 
         .feedback-incorrect {
             background-color: #fee2e2 !important;
-            /* red-100 */
             border-color: #dc2626 !important;
-            /* red-600 */
             color: #7f1d1d !important;
-            /* red-900 */
-            cursor: default !important;
         }
 
         /* Dictionary Popup */
         .dictionary-popup {
-            position: absolute;
+            position: fixed;
             background: white;
             border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            padding: 12px;
-            border-radius: 8px;
-            z-index: 50;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            padding: 12px 16px;
+            border-radius: 12px;
+            z-index: 1000;
             max-width: 300px;
             font-size: 0.875rem;
         }
 
-        /* Clickable Word Styles - No Underline */
-        .clickable-word {
-            cursor: pointer;
-            border-bottom: none;
-            /* Removed underline */
-            transition: background-color 0.2s;
-            border-radius: 4px;
-            padding: 0 2px;
-        }
-
-        .clickable-word:hover {
-            background-color: rgba(79, 70, 229, 0.1);
-            /* Subtle highlight */
-            color: #4f46e5;
-        }
-
         /* Speaker Animation */
-        @keyframes pulse-ring {
+        @keyframes pulseRing {
             0% {
-                transform: scale(0.8);
-                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.5);
             }
 
             70% {
                 transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+                box-shadow: 0 0 0 8px rgba(79, 70, 229, 0);
             }
 
             100% {
-                transform: scale(0.8);
+                transform: scale(0.95);
                 box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
             }
         }
 
         .speaking {
-            animation: pulse-ring 2s infinite;
-            color: #4f46e5;
-            /* indigo-600 */
+            animation: pulseRing 1.5s ease-in-out infinite;
+            color: #4f46e5 !important;
         }
 
         /* Modal Overlay */
         .modal-overlay {
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(2px);
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
         }
 
-        /* Compact Header for Learn Mode */
-        .compact-header #headerTitle {
-            display: none;
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #4f46e5;
         }
 
-        .compact-header {
-            margin-bottom: 1rem !important;
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #4f46e5;
+        }
+
+        .toggle-checkbox {
+            right: 50%;
+            border-color: #cbd5e1;
+        }
+
+        /* Line clamp */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Contenteditable focus */
+        [contenteditable]:focus {
+            outline: 2px solid #818cf8;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+
+        /* Clickable word hover */
+        .clickable-word:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: #4f46e5;
         }
     </style>
 </head>
 
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 text-slate-800 min-h-screen">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-4xl transition-all duration-300" id="mainContainer">
-        <header class="text-center mb-8 relative transition-all duration-300" id="mainHeader">
-            <!-- Exit Button (Top Left) -->
-            <button id="headerExitBtn"
-                class="hidden absolute top-0 left-0 p-2 text-slate-400 hover:text-slate-600 transition-colors"
-                title="Exit Learn Mode">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-
-            <!-- Header Controls (Top Right) -->
-            <div class="absolute top-0 right-0 flex items-center gap-3">
-                <!-- Mic Indicator -->
-                <div id="micIndicator" class="text-slate-300 flex items-center justify-center"
-                    title="Free voices (browser)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                        fill="currentColor" stroke="none">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
+    <!-- ============================================================ -->
+    <!-- HOME SECTION -->
+    <!-- ============================================================ -->
+    <section id="homeSection" class="min-h-screen">
+        <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+            <!-- Header -->
+            <header class="flex items-center justify-between mb-8">
+                <div id="homeStats" class="flex items-center gap-4 text-sm text-slate-500">
+                    <!-- Stats injected by JS -->
                 </div>
-                <!-- Settings Button -->
-                <button id="settingsBtn" class="p-2 text-slate-400 hover:text-slate-600 transition-colors"
-                    title="Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path
-                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-                        </path>
-                    </svg>
+                <div class="text-center">
+                    <h1
+                        class="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        StudySet
+                    </h1>
+                    <p class="text-slate-500 text-sm mt-1">Master your flashcards</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="micIndicator" class="text-slate-300 p-2 cursor-help" title="Free voices (browser)">
+                        <span class="material-symbols-outlined">mic</span>
+                    </div>
+                    <button id="homeSettingsBtn"
+                        class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        aria-label="Settings">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                    <button id="homeCreateSetBtn"
+                        class="flex items-center gap-2 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-all hover:scale-105 shadow-md">
+                        <span class="material-symbols-outlined">add</span>
+                        Create Set
+                    </button>
+                </div>
+            </header>
+
+            <!-- Quick Actions -->
+            <div id="homeQuickActions" class="hidden flex flex-wrap gap-3 mb-8">
+                <button id="quickActionStudy"
+                    class="flex items-center gap-2 bg-green-500 text-white font-medium py-2 px-4 rounded-lg hover:bg-green-600 transition-all">
+                    <span class="material-symbols-outlined">timer</span>
+                    Study 5 min
+                </button>
+                <button id="quickActionDue"
+                    class="flex items-center gap-2 bg-orange-500 text-white font-medium py-2 px-4 rounded-lg hover:bg-orange-600 transition-all disabled:bg-slate-300">
+                    <span class="material-symbols-outlined">schedule</span>
+                    Review Due (<span class="due-count">0</span>)
+                </button>
+                <button id="quickActionRandom"
+                    class="flex items-center gap-2 bg-purple-500 text-white font-medium py-2 px-4 rounded-lg hover:bg-purple-600 transition-all">
+                    <span class="material-symbols-outlined">shuffle</span>
+                    Random Set
                 </button>
             </div>
 
-            <div id="headerTitle">
-                <h1 class="text-4xl md:text-5xl font-bold text-slate-900">StudySet</h1>
-                <p class="text-slate-500 mt-2">Create your flashcards and master them with Learn Mode.</p>
+            <!-- Resume Section -->
+            <div id="homeResumeSection" class="hidden mb-8">
+                <h2 class="text-lg font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-600">bookmark</span>
+                    Pick up where you left off
+                </h2>
+                <button id="homeResumeCard"
+                    class="w-full bg-white p-5 rounded-xl shadow-md border border-slate-200 hover:border-indigo-400 hover:shadow-lg transition-all text-left">
+                    <!-- Content injected by JS -->
+                </button>
             </div>
-        </header>
 
-        <!-- Main content area -->
-        <main id="mainContent">
-
-            <!-- Set Management Section -->
-            <section id="setManagementSection" class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-semibold mb-4">Your Study Sets</h2>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <select id="setSelector"
-                        class="w-full sm:w-1/2 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"></select>
-                    <input type="text" id="newSetName" placeholder="New set name..."
-                        class="w-full sm:w-1/2 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                    <button id="addSetBtn"
-                        class="bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700">Add
-                        Set</button>
-                    <button id="deleteSetBtn"
-                        class="bg-red-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-600">Delete
-                        Set</button>
+            <!-- All Sets Grid -->
+            <div>
+                <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-600">library_books</span>
+                    Your Study Sets
+                </h2>
+                <div id="homeSetGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Set cards injected by JS -->
                 </div>
-            </section>
+            </div>
+        </div>
+    </section>
 
-            <!-- Card Creation Section -->
-            <section id="creationSection" class="bg-white p-6 rounded-xl shadow-md mb-8">
-                <h2 class="text-2xl font-semibold mb-4">Add Cards to "<span id="currentSetName"
-                        class="text-indigo-600"></span>"</h2>
-                <form id="cardForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-1">
-                        <label for="termInput" class="block text-sm font-medium text-slate-600 mb-1">Term</label>
-                        <input type="text" id="termInput" placeholder="e.g., Photosynthesis"
-                            class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition">
-                    </div>
-                    <div class="col-span-1">
-                        <label for="definitionInput"
-                            class="block text-sm font-medium text-slate-600 mb-1">Definition</label>
-                        <input type="text" id="definitionInput"
-                            placeholder="e.g., Process plants use to convert light energy..."
-                            class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition">
-                    </div>
-                    <div class="col-span-1 md:col-span-2">
-                        <button type="submit"
-                            class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105">
-                            Add Card
-                        </button>
-                    </div>
-                </form>
-            </section>
+    <!-- ============================================================ -->
+    <!-- SET VIEW SECTION -->
+    <!-- ============================================================ -->
+    <section id="setViewSection" class="hidden min-h-screen">
+        <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+            <!-- Header -->
+            <header class="flex items-center justify-between mb-6">
+                <button id="setViewBackBtn"
+                    class="flex items-center gap-1 text-slate-500 hover:text-slate-700 transition-colors"
+                    aria-label="Back">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    <span class="hidden sm:inline">Back</span>
+                </button>
+                <h1 id="setViewTitle" class="text-2xl font-bold text-slate-900 truncate max-w-md"></h1>
+                <button id="setViewDeleteBtn"
+                    class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    aria-label="Delete Set">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </header>
 
-            <!-- Card List Section -->
-            <section id="cardListSection" class="mb-8">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                    <h2 class="text-2xl font-semibold">Your Cards (<span id="cardCount">0</span>)</h2>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <button id="shuffleBtn"
-                            class="bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
-                            disabled>Shuffle</button>
-                        <button id="studyStarredBtn"
-                            class="bg-yellow-400 text-yellow-900 font-semibold py-2 px-4 rounded-lg hover:bg-yellow-500 transition disabled:bg-yellow-200 disabled:cursor-not-allowed"
-                            disabled>Study Starred</button>
-                        <button id="startLearnBtn"
-                            class="bg-green-500 text-white font-semibold py-2 px-5 rounded-lg hover:bg-green-600 transition disabled:bg-slate-300 disabled:cursor-not-allowed"
-                            disabled>
-                            Start Learning
-                        </button>
-                    </div>
-                </div>
-                <div id="cardList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Cards will be dynamically inserted here -->
-                </div>
-            </section>
-
-            <!-- Learn Mode Section (Initially Hidden) -->
-            <section id="learnSection" class="hidden bg-white p-6 rounded-xl shadow-md">
-                <!-- Header Removed -->
-
-                <!-- Progress Bar -->
-                <div class="mb-8 px-2"> <!-- Increased spacing -->
-                    <div class="flex justify-between mb-2">
-                        <span class="text-base font-medium text-slate-700">Progress</span>
-                        <span id="progressText" class="text-sm font-medium text-slate-700">0 / 0</span>
-                    </div>
-                    <div class="w-full bg-slate-200 rounded-full h-4"> <!-- Increased height slightly -->
-                        <div id="progressBar" class="bg-indigo-600 h-4 rounded-full transition-all duration-500"
-                            style="width: 0%"></div>
-                    </div>
+            <!-- Flashcard Carousel -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                <div id="noCardsMessage" class="hidden text-center py-12 text-slate-400">
+                    <span class="material-symbols-outlined text-5xl mb-3">style</span>
+                    <p>No cards yet. Add some to see the flashcard preview!</p>
                 </div>
 
-                <div id="learnContent">
-                    <!-- Question (Definition) -->
-                    <div class="bg-slate-100 p-6 rounded-lg mb-6 min-h-[120px] flex items-center relative">
-                        <!-- Speaker Icon on Left -->
-                        <button id="speakBtn"
-                            class="mr-6 text-slate-500 hover:text-indigo-600 flex-shrink-0 transition-colors p-2 rounded-full hover:bg-slate-200 relative">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                            </svg>
-                        </button>
-                        <div id="questionTextContainer" class="flex-grow text-center relative">
-                            <!-- Premium Badge Removed -->
-                            <p id="questionText" class="text-xl text-slate-800"></p>
+                <div class="flex items-center justify-center gap-4">
+                    <button id="flashcardPrev"
+                        class="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                        aria-label="Previous">
+                        <span class="material-symbols-outlined text-3xl">arrow_back</span>
+                    </button>
+
+                    <div id="flashcard" class="flashcard-container w-full max-w-lg h-64 cursor-pointer" role="button"
+                        aria-label="Click to flip">
+                        <div
+                            class="flashcard-inner bg-gradient-to-br from-indigo-50 to-slate-100 rounded-xl shadow-inner border border-slate-200">
+                            <div id="flashcardFront" class="flashcard-front text-2xl font-semibold text-slate-800">
+                            </div>
+                            <div id="flashcardBack"
+                                class="flashcard-back text-lg text-slate-600 bg-gradient-to-br from-slate-100 to-indigo-50 rounded-xl">
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Answer Options -->
-                    <div id="answerOptions" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    <button id="flashcardNext"
+                        class="p-3 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                        aria-label="Next">
+                        <span class="material-symbols-outlined text-3xl">arrow_forward</span>
+                    </button>
                 </div>
 
-                <!-- Feedback Section (for incorrect answers) -->
-                <div id="feedbackSection" class="hidden mt-6 p-4 rounded-lg text-center">
-                    <h3 id="feedbackTitle" class="text-xl font-bold"></h3>
-                    <p id="feedbackText" class="mt-1"></p>
-                    <button id="nextQuestionBtn"
-                        class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-8 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Next</button>
+                <div class="flex items-center justify-center gap-4 mt-4">
+                    <span id="flashcardCounter" class="text-sm text-slate-500 font-medium">0 / 0</span>
+                    <button id="flashcardShuffle"
+                        class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        aria-label="Shuffle">
+                        <span class="material-symbols-outlined">shuffle</span>
+                    </button>
+                    <button id="flashcardSpeak"
+                        class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        aria-label="Listen">
+                        <span class="material-symbols-outlined">volume_up</span>
+                    </button>
                 </div>
+            </div>
 
-                <!-- Summary Screen -->
-                <div id="summaryScreen" class="hidden text-center py-8">
-                    <button id="continueBtn"
-                        class="bg-indigo-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-indigo-700 mb-8 shadow-lg transform transition hover:scale-105">Continue
-                        Learning</button>
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-3 mb-6">
+                <button id="setViewLearnBtn"
+                    class="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white font-semibold py-3 px-6 rounded-lg hover:bg-green-600 transition-all hover:scale-[1.02] shadow-md disabled:bg-slate-300 disabled:cursor-not-allowed disabled:shadow-none">
+                    <span class="material-symbols-outlined">school</span>
+                    Learn All (<span id="setViewCardCount">0</span>)
+                </button>
+                <button id="setViewStarredBtn"
+                    class="flex items-center justify-center gap-2 bg-yellow-400 text-yellow-900 font-semibold py-3 px-5 rounded-lg hover:bg-yellow-500 transition-all hover:scale-[1.02] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined">star</span>
+                    Starred (<span id="setViewStarredCount">0</span>)
+                </button>
+                <button id="setViewDueBtn"
+                    class="flex items-center justify-center gap-2 bg-orange-500 text-white font-semibold py-3 px-5 rounded-lg hover:bg-orange-600 transition-all hover:scale-[1.02] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined">schedule</span>
+                    Due (<span class="due-count" id="setViewDueCount">0</span>)
+                </button>
+            </div>
 
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Batch Complete!</h2>
-                    <p class="text-slate-600 mb-6">Here's your progress on the last 10 questions.</p>
-                    <div id="summaryStats" class="flex justify-center gap-8 mb-6">
-                        <div><span id="summaryCorrect" class="text-3xl font-bold text-green-500"></span>
-                            <p>Correct</p>
-                        </div>
-                        <div><span id="summaryMissed" class="text-3xl font-bold text-red-500"></span>
-                            <p>Missed</p>
-                        </div>
+            <!-- Add Cards Row -->
+            <div class="flex gap-3 mb-6">
+                <button id="setViewAddCardBtn"
+                    class="flex items-center gap-2 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-all shadow-sm">
+                    <span class="material-symbols-outlined">add</span>
+                    Add Card
+                </button>
+                <button id="bulkImportBtn"
+                    class="flex items-center gap-2 bg-slate-200 text-slate-700 font-medium py-2 px-4 rounded-lg hover:bg-slate-300 transition-all">
+                    <span class="material-symbols-outlined">upload</span>
+                    Bulk Import
+                </button>
+            </div>
+
+            <!-- Term List -->
+            <div>
+                <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-600">list</span>
+                    Terms in this set
+                </h2>
+                <div id="setViewTermList" class="space-y-3">
+                    <!-- Terms injected by JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- LEARN MODE SECTION -->
+    <!-- ============================================================ -->
+    <section id="learnSection" class="hidden min-h-screen bg-gradient-to-b from-slate-100 to-slate-50">
+        <div class="container mx-auto p-4 md:p-6 max-w-3xl">
+            <!-- Header -->
+            <header class="flex items-center justify-between mb-6">
+                <button id="learnExitBtn"
+                    class="flex items-center gap-1 text-slate-500 hover:text-slate-700 transition-colors"
+                    aria-label="Exit">
+                    <span class="material-symbols-outlined">close</span>
+                    <span class="hidden sm:inline">Exit</span>
+                </button>
+                <h2 class="text-lg font-semibold text-slate-700">Learn Mode</h2>
+                <button id="learnSettingsBtn"
+                    class="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-lg transition-colors"
+                    aria-label="Learn Settings">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+            </header>
+
+            <!-- Progress Bar -->
+            <div class="mb-8">
+                <div class="flex justify-between mb-2">
+                    <span class="text-sm font-medium text-slate-600">Progress</span>
+                    <span id="progressText" class="text-sm font-medium text-slate-600">0 / 0</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-3 shadow-inner">
+                    <div id="progressBar"
+                        class="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-500"
+                        style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Question Content -->
+            <div id="learnContent" class="bg-white rounded-2xl shadow-lg p-6">
+                <!-- Question -->
+                <div
+                    class="bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-xl mb-6 min-h-[140px] flex items-center border border-slate-200">
+                    <button id="speakBtn"
+                        class="mr-6 text-slate-400 hover:text-indigo-600 flex-shrink-0 transition-colors p-3 rounded-full hover:bg-white"
+                        aria-label="Listen">
+                        <span class="material-symbols-outlined text-3xl">volume_up</span>
+                    </button>
+                    <div class="flex-grow text-center">
+                        <p id="questionText" class="text-xl text-slate-800 leading-relaxed"></p>
                     </div>
-                    <div id="summaryList" class="text-left mb-6"></div>
                 </div>
 
-                <!-- Completion Screen -->
-                <div id="completionScreen" class="hidden text-center py-8">
-                    <h2 class="text-3xl font-bold text-green-500 mb-4">Congratulations!</h2>
-                    <p class="text-lg text-slate-600 mb-6">You've mastered all the cards in this set.</p>
+                <!-- Grade Buttons (SM-2) -->
+                <div id="gradeButtons" class="hidden flex gap-3">
+                    <!-- Buttons injected by JS -->
+                </div>
+
+                <!-- Multiple Choice (non-SM2) -->
+                <div id="answerOptions" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Options injected by JS -->
+                </div>
+            </div>
+
+            <!-- Feedback Section -->
+            <div id="feedbackSection" class="hidden bg-white rounded-2xl shadow-lg p-6 mt-6 text-center">
+                <h3 id="feedbackTitle" class="text-xl font-bold"></h3>
+                <p id="feedbackText" class="mt-2 text-slate-600"></p>
+                <button id="nextQuestionBtn"
+                    class="mt-6 bg-indigo-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-all shadow-md">
+                    Next
+                </button>
+            </div>
+
+            <!-- Summary Screen -->
+            <div id="summaryScreen" class="hidden bg-white rounded-2xl shadow-lg p-8 mt-6 text-center">
+                <button id="continueBtn"
+                    class="bg-indigo-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-indigo-700 mb-8 shadow-lg transition-all hover:scale-105">
+                    Continue Learning
+                </button>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Batch Complete!</h2>
+                <p class="text-slate-500 mb-6">Here's how you did on the last 10 questions.</p>
+                <div class="flex justify-center gap-12 mb-6">
+                    <div>
+                        <span id="summaryCorrect" class="text-4xl font-bold text-green-500">0</span>
+                        <p class="text-slate-500">Correct</p>
+                    </div>
+                    <div>
+                        <span id="summaryMissed" class="text-4xl font-bold text-red-500">0</span>
+                        <p class="text-slate-500">Missed</p>
+                    </div>
+                </div>
+                <div id="summaryList" class="text-left max-h-64 overflow-y-auto"></div>
+            </div>
+
+            <!-- Completion Screen -->
+            <div id="completionScreen" class="hidden bg-white rounded-2xl shadow-lg p-8 text-center">
+                <span class="material-symbols-outlined text-7xl text-green-500 mb-4">celebration</span>
+                <h2 class="text-3xl font-bold text-green-600 mb-4">Congratulations!</h2>
+                <p class="text-lg text-slate-600 mb-8">You've mastered all the cards in this session.</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <button id="restartLearnBtn"
-                        class="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700">Restart
-                        Session</button>
+                        class="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-all shadow-md">
+                        Restart Session
+                    </button>
+                    <button id="backToSetBtn"
+                        class="bg-slate-200 text-slate-700 font-semibold py-3 px-6 rounded-lg hover:bg-slate-300 transition-all">
+                        Back to Set
+                    </button>
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- MODALS -->
+    <!-- ============================================================ -->
+
+    <!-- Create Set Modal -->
+    <div id="createSetModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-800">Create New Set</h2>
+                <button id="createSetCloseBtn"
+                    class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="createSetForm">
+                <input type="text" id="createSetNameInput" placeholder="Set name..."
+                    class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 mb-4"
+                    required>
+                <button type="submit"
+                    class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md">
+                    Create Set
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Card Modal -->
+    <div id="addCardModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-800">Add Card</h2>
+                <button id="addCardCloseBtn"
+                    class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <form id="addCardForm">
+                <div class="mb-4">
+                    <label for="addCardTermInput" class="block text-sm font-medium text-slate-600 mb-1">Term</label>
+                    <input type="text" id="addCardTermInput" placeholder="e.g., Photosynthesis"
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        required>
+                </div>
+                <div class="mb-4">
+                    <label for="addCardDefInput"
+                        class="block text-sm font-medium text-slate-600 mb-1">Definition</label>
+                    <textarea id="addCardDefInput" rows="3" placeholder="e.g., Process plants use to convert light..."
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        required></textarea>
+                </div>
+                <button type="submit"
+                    class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md">
+                    Add Card
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div id="bulkImportModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-800">Bulk Import Cards</h2>
+                <button id="bulkImportCloseBtn"
+                    class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label for="importDelimiter" class="block text-sm font-medium text-slate-600 mb-1">Delimiter</label>
+                    <select id="importDelimiter"
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <option value="auto">Auto-Detect</option>
+                        <option value=":">Colon (:)</option>
+                        <option value=";">Semicolon (;)</option>
+                        <option value=",">Comma (,)</option>
+                        <option value="tab">Tab</option>
+                        <option value="newline">Newline (alternating lines)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="importText" class="block text-sm font-medium text-slate-600 mb-1">Paste Data</label>
+                    <textarea id="importText" rows="10"
+                        placeholder="Photosynthesis: Process plants use...&#10;Mitochondria: Powerhouse of cell..."
+                        class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm"></textarea>
+                </div>
+                <button id="importBtn"
+                    class="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md">
+                    <span class="material-symbols-outlined">upload</span>
+                    Import Cards
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
         <div class="modal-overlay absolute inset-0"></div>
-        <div
-            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+        <div class="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-slate-800">Settings</h2>
-                <button id="closeSettingsBtn" class="text-slate-400 hover:text-slate-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
+                <button id="closeSettingsBtn"
+                    class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
 
             <div class="space-y-6">
-                <!-- Auto Read Toggle -->
+                <!-- Auto Read -->
                 <div class="flex items-center justify-between">
                     <label for="settingAutoRead" class="font-medium text-slate-700">Auto-read questions</label>
-                    <div
-                        class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="settingAutoRead"
-                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out" />
+                    <div class="relative inline-block w-12 align-middle select-none">
+                        <input type="checkbox" id="settingAutoRead"
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-200" />
                         <label for="settingAutoRead"
                             class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label>
                     </div>
-                    <style>
-                        .toggle-checkbox:checked {
-                            right: 0;
-                            border-color: #4f46e5;
-                        }
-
-                        .toggle-checkbox:checked+.toggle-label {
-                            background-color: #4f46e5;
-                        }
-
-                        .toggle-checkbox {
-                            right: 50%;
-                            border-color: #cbd5e1;
-                        }
-                    </style>
                 </div>
 
                 <hr class="border-slate-200">
 
-                <!-- Premium TTS Section -->
+                <!-- Premium TTS -->
                 <div>
                     <div class="flex items-center justify-between mb-4">
                         <label for="settingUsePremium" class="font-medium text-slate-700 flex items-center gap-2">
-                            Use premium voices (ElevenLabs)
+                            Premium voices
                             <span
-                                class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full font-bold">PRO</span>
+                                class="text-xs bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-2 py-0.5 rounded-full font-bold">PRO</span>
                         </label>
-                        <div
-                            class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                            <input type="checkbox" name="toggle" id="settingUsePremium"
-                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out" />
+                        <div class="relative inline-block w-12 align-middle select-none">
+                            <input type="checkbox" id="settingUsePremium"
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-200" />
                             <label for="settingUsePremium"
                                 class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label>
                         </div>
                     </div>
 
-                    <div id="premiumSettingsContainer" class="hidden pl-4 border-l-2 border-indigo-100 space-y-4">
-                        <p class="text-sm text-slate-500">Unlock ultra-realistic human voices.</p>
-
+                    <div id="premiumSettingsContainer" class="hidden pl-4 border-l-2 border-indigo-200 space-y-4">
+                        <p class="text-sm text-slate-500">Ultra-realistic voices powered by ElevenLabs.</p>
                         <div>
                             <label for="elevenLabsKey" class="block text-sm font-medium text-slate-700 mb-1">API
                                 Key</label>
                             <input type="password" id="elevenLabsKey" placeholder="sk_..."
-                                class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm">
-                            <p class="text-xs text-slate-400 mt-1">Stored locally in your browser. <a
-                                    href="https://elevenlabs.io" target="_blank"
-                                    class="text-indigo-600 hover:underline">Get a key</a></p>
+                                class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                            <p class="text-xs text-slate-400 mt-1">
+                                <a href="https://elevenlabs.io" target="_blank"
+                                    class="text-indigo-600 hover:underline">Get your key →</a>
+                            </p>
                         </div>
-
                         <div>
                             <label for="voiceSelector"
                                 class="block text-sm font-medium text-slate-700 mb-1">Voice</label>
                             <select id="voiceSelector"
-                                class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 text-sm">
-                                <option value="21m00Tcm4TlvDq8ikWAM">Rachel (American, Warm)</option>
-                                <option value="ErXwobaYiN019PkySvjV">Antoni (American, Clear)</option>
-                                <option value="AZnzlk1XvdvUeBnXmlld">Domi (American, Strong)</option>
-                                <option value="EXAVITQu4vr4xnSDxMaL">Bella (American, Soft)</option>
+                                class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                                <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Warm)</option>
+                                <option value="ErXwobaYiN019PkySvjV">Antoni (Clear)</option>
+                                <option value="AZnzlk1XvdvUeBnXmlld">Domi (Strong)</option>
+                                <option value="EXAVITQu4vr4xnSDxMaL">Bella (Soft)</option>
                             </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-8">
-                <button id="saveSettingsBtn"
-                    class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition">Save
-                    Settings</button>
+            <button id="saveSettingsBtn"
+                class="w-full mt-8 bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md">
+                Save Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Learn Settings Modal -->
+    <div id="learnSettingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-800">Learn Settings</h2>
+                <button id="learnSettingsCloseBtn"
+                    class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- SM-2 Toggle -->
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div>
+                        <label for="settingSM2" class="font-medium text-slate-700">Spaced Repetition (SM-2)</label>
+                        <p class="text-xs text-slate-500">Optimize review timing for better retention</p>
+                    </div>
+                    <div class="relative inline-block w-12 align-middle select-none">
+                        <input type="checkbox" id="settingSM2" checked
+                            class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-200" />
+                        <label for="settingSM2"
+                            class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Export/Import -->
+                <div class="flex gap-3">
+                    <button id="exportSetBtn"
+                        class="flex-1 flex items-center justify-center gap-2 bg-slate-100 text-slate-700 font-medium py-3 rounded-lg hover:bg-slate-200 transition-colors">
+                        <span class="material-symbols-outlined">download</span>
+                        Export JSON
+                    </button>
+                    <button id="importSetBtn"
+                        class="flex-1 flex items-center justify-center gap-2 bg-slate-100 text-slate-700 font-medium py-3 rounded-lg hover:bg-slate-200 transition-colors">
+                        <span class="material-symbols-outlined">upload</span>
+                        Import JSON
+                    </button>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Keyboard Settings -->
+                <button id="keyboardSettingsBtn"
+                    class="w-full flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-slate-600">keyboard</span>
+                        <span class="font-medium text-slate-700">Keyboard Shortcuts</span>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-400">chevron_right</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // DOM Elements
-            const setSelector = document.getElementById('setSelector');
-            const newSetName = document.getElementById('newSetName');
-            const addSetBtn = document.getElementById('addSetBtn');
-            const deleteSetBtn = document.getElementById('deleteSetBtn');
-            const currentSetName = document.getElementById('currentSetName');
-
-            const cardForm = document.getElementById('cardForm');
-            const termInput = document.getElementById('termInput');
-            const definitionInput = document.getElementById('definitionInput');
-            const cardList = document.getElementById('cardList');
-            const cardCount = document.getElementById('cardCount');
-            const startLearnBtn = document.getElementById('startLearnBtn');
-            const studyStarredBtn = document.getElementById('studyStarredBtn');
-            const shuffleBtn = document.getElementById('shuffleBtn');
-
-            const settingsBtn = document.getElementById('settingsBtn');
-            const settingsModal = document.getElementById('settingsModal');
-            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-            const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-            const settingAutoRead = document.getElementById('settingAutoRead');
-            const settingUsePremium = document.getElementById('settingUsePremium');
-            const premiumSettingsContainer = document.getElementById('premiumSettingsContainer');
-            const elevenLabsKeyInput = document.getElementById('elevenLabsKey');
-            const voiceSelector = document.getElementById('voiceSelector');
-            const micIndicator = document.getElementById('micIndicator');
-
-            const mainContainer = document.getElementById('mainContainer');
-            const mainHeader = document.getElementById('mainHeader');
-            const headerExitBtn = document.getElementById('headerExitBtn');
-
-            const creationSection = document.getElementById('creationSection');
-            const cardListSection = document.getElementById('cardListSection');
-            const learnSection = document.getElementById('learnSection');
-            // exitLearnBtn removed
-
-            const learnContent = document.getElementById('learnContent');
-            const questionText = document.getElementById('questionText');
-            const answerOptions = document.getElementById('answerOptions');
-            const speakBtn = document.getElementById('speakBtn');
-
-            const feedbackSection = document.getElementById('feedbackSection');
-            const feedbackTitle = document.getElementById('feedbackTitle');
-            const feedbackText = document.getElementById('feedbackText');
-            const nextQuestionBtn = document.getElementById('nextQuestionBtn');
-
-            const summaryScreen = document.getElementById('summaryScreen');
-            const summaryCorrect = document.getElementById('summaryCorrect');
-            const summaryMissed = document.getElementById('summaryMissed');
-            const summaryList = document.getElementById('summaryList');
-            const continueBtn = document.getElementById('continueBtn');
-
-            const completionScreen = document.getElementById('completionScreen');
-            const restartLearnBtn = document.getElementById('restartLearnBtn');
-
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-
-            // --- State Management ---
-            let allSets = {};
-            let activeSetId = null;
-            let learnSession = {
-                isActive: false,
-                unseen: [],
-                mastered: [],
-                currentQuestion: null,
-                questionsAnsweredInSession: 0,
-                batchHistory: [],
-                studyMode: 'all',
-                consecutiveCorrect: {}, // Track consecutive correct answers by card ID
-            };
-
-            // TTS State
-            let ttsState = {
-                audioCache: new Map(), // Cache for blobs: key = text-voiceId
-                elevenLabsKey: '',
-                autoRead: false,
-                usePremium: false,
-                selectedVoiceId: '21m00Tcm4TlvDq8ikWAM', // Default Rachel
-                isSpeaking: false,
-                currentAudio: null
-            };
-
-            // --- Initial Setup ---
-            loadState();
-
-            // --- Event Listeners ---
-            addSetBtn.addEventListener('click', addNewSet);
-            deleteSetBtn.addEventListener('click', deleteCurrentSet);
-            setSelector.addEventListener('change', (e) => switchActiveSet(e.target.value));
-            cardForm.addEventListener('submit', addCard);
-
-            // Settings Listeners
-            settingsBtn.addEventListener('click', () => {
-                elevenLabsKeyInput.value = ttsState.elevenLabsKey || '';
-                settingAutoRead.checked = ttsState.autoRead;
-                settingUsePremium.checked = ttsState.usePremium;
-                voiceSelector.value = ttsState.selectedVoiceId;
-
-                togglePremiumSettings(ttsState.usePremium);
-                settingsModal.classList.remove('hidden');
-            });
-
-            settingUsePremium.addEventListener('change', (e) => {
-                togglePremiumSettings(e.target.checked);
-            });
-
-            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
-            saveSettingsBtn.addEventListener('click', saveSettings);
-            settingsModal.addEventListener('click', (e) => {
-                if (e.target.classList.contains('modal-overlay')) settingsModal.classList.add('hidden');
-            });
-
-            function togglePremiumSettings(show) {
-                if (show) {
-                    premiumSettingsContainer.classList.remove('hidden');
-                } else {
-                    premiumSettingsContainer.classList.add('hidden');
-                }
-            }
-
-            // --- State & Set Management Functions ---
-            function loadState() {
-                const savedSets = localStorage.getItem('studySets');
-                allSets = savedSets ? JSON.parse(savedSets) : {};
-                activeSetId = localStorage.getItem('activeSetId');
-
-                if (Object.keys(allSets).length === 0) {
-                    // Create a default set if none exist
-                    const defaultId = `set_${Date.now()}`;
-                    allSets[defaultId] = { name: 'My First Set', cards: [] };
-                    activeSetId = defaultId;
-                }
-
-                if (!activeSetId || !allSets[activeSetId]) {
-                    activeSetId = Object.keys(allSets)[0];
-                }
-
-                saveState();
-                populateSetSelector();
-                renderUIForActiveSet();
-
-                // Load TTS Settings
-                ttsState.elevenLabsKey = localStorage.getItem('elevenLabsKey') || '';
-                ttsState.autoRead = localStorage.getItem('autoRead') === 'true';
-                ttsState.usePremium = localStorage.getItem('usePremium') === 'true';
-                ttsState.selectedVoiceId = localStorage.getItem('selectedVoiceId') || '21m00Tcm4TlvDq8ikWAM';
-                updatePremiumStatus();
-            }
-
-            function saveState() {
-                localStorage.setItem('studySets', JSON.stringify(allSets));
-                localStorage.setItem('activeSetId', activeSetId);
-            }
-
-            function saveSettings() {
-                const key = elevenLabsKeyInput.value.trim();
-                ttsState.elevenLabsKey = key;
-                ttsState.autoRead = settingAutoRead.checked;
-                ttsState.usePremium = settingUsePremium.checked;
-                ttsState.selectedVoiceId = voiceSelector.value;
-
-                localStorage.setItem('elevenLabsKey', ttsState.elevenLabsKey);
-                localStorage.setItem('autoRead', ttsState.autoRead);
-                localStorage.setItem('usePremium', ttsState.usePremium);
-                localStorage.setItem('selectedVoiceId', ttsState.selectedVoiceId);
-
-                updatePremiumStatus();
-                settingsModal.classList.add('hidden');
-            }
-
-            function updatePremiumStatus() {
-                // Update Mic Indicator
-                if (ttsState.usePremium && ttsState.elevenLabsKey && ttsState.elevenLabsKey.length > 10) {
-                    micIndicator.classList.remove('text-slate-300');
-                    micIndicator.classList.add('text-green-500');
-                    micIndicator.setAttribute('title', 'Premium voices active (ElevenLabs)');
-                } else {
-                    micIndicator.classList.remove('text-green-500');
-                    micIndicator.classList.add('text-slate-300');
-                    micIndicator.setAttribute('title', 'Free voices (browser)');
-                }
-            }
-
-            function addNewSet() {
-                const name = newSetName.value.trim();
-                if (name) {
-                    const newId = `set_${Date.now()}`;
-                    allSets[newId] = { name: name, cards: [] };
-                    newSetName.value = '';
-                    switchActiveSet(newId);
-                }
-            }
-
-            function deleteCurrentSet() {
-                if (Object.keys(allSets).length > 1) {
-                    delete allSets[activeSetId];
-                    activeSetId = Object.keys(allSets)[0];
-                    switchActiveSet(activeSetId);
-                } else {
-                    alert("You can't delete your only set!");
-                }
-            }
-
-            function switchActiveSet(setId) {
-                activeSetId = setId;
-                saveState();
-                populateSetSelector();
-                renderUIForActiveSet();
-            }
-
-            function populateSetSelector() {
-                setSelector.innerHTML = '';
-                for (const setId in allSets) {
-                    const option = document.createElement('option');
-                    option.value = setId;
-                    option.textContent = allSets[setId].name;
-                    option.selected = setId === activeSetId;
-                    setSelector.appendChild(option);
-                }
-            }
-
-            function renderUIForActiveSet() {
-                if (!activeSetId || !allSets[activeSetId]) return;
-                currentSetName.textContent = allSets[activeSetId].name;
-                renderCardList();
-                updateButtonStates();
-            }
-
-            // --- Card Logic ---
-            function addCard(e) {
-                e.preventDefault();
-                const term = termInput.value.trim();
-                const definition = definitionInput.value.trim();
-
-                if (term && definition) {
-                    const newCard = { id: Date.now(), term, definition, starred: false, masteryLevel: 0 };
-                    allSets[activeSetId].cards.push(newCard);
-                    saveState();
-                    renderCardList();
-                    updateButtonStates();
-                    termInput.value = '';
-                    definitionInput.value = '';
-                    termInput.focus();
-                }
-            }
-
-            function deleteCard(cardId) {
-                const cards = allSets[activeSetId].cards;
-                allSets[activeSetId].cards = cards.filter(card => card.id !== cardId);
-                saveState();
-                renderCardList();
-                updateButtonStates();
-            }
-
-            function toggleStar(cardId) {
-                const card = allSets[activeSetId].cards.find(c => c.id === cardId);
-                if (card) {
-                    card.starred = !card.starred;
-                    saveState();
-                    renderCardList();
-                    updateButtonStates();
-                }
-            }
-
-            function renderCardList() {
-                cardList.innerHTML = '';
-                const cards = allSets[activeSetId].cards;
-                cards.forEach(card => {
-                    const cardElement = document.createElement('div');
-                    cardElement.className = 'bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex justify-between items-start';
-                    cardElement.innerHTML = `
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h3 class="font-semibold text-slate-800">${card.term}</h3>
-                                ${card.masteryLevel >= 3 ? '<span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-medium">Mastered</span>' : ''}
-                            </div>
-                            <p class="text-slate-500 text-sm mt-1">${card.definition}</p>
-                        </div>
-                        <div class="flex gap-2">
-                             <button data-id="${card.id}" class="star-btn text-slate-400 hover:text-yellow-400 transition-colors ${card.starred ? 'starred' : ''}">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            </button>
-                            <button data-id="${card.id}" class="delete-btn text-slate-400 hover:text-red-500 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                            </button>
-                        </div>
-                    `;
-                    cardList.appendChild(cardElement);
-                });
-                cardCount.textContent = cards.length;
-
-                document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', () => deleteCard(Number(b.dataset.id))));
-                document.querySelectorAll('.star-btn').forEach(b => b.addEventListener('click', () => toggleStar(Number(b.dataset.id))));
-            }
-
-            function updateButtonStates() {
-                const cards = allSets[activeSetId].cards;
-                const hasEnoughCards = cards.length >= 2;
-                const hasStarredCards = cards.some(c => c.starred);
-                startLearnBtn.disabled = !hasEnoughCards;
-                shuffleBtn.disabled = !hasEnoughCards;
-                studyStarredBtn.disabled = hasEnoughCards && !hasStarredCards;
-            }
-
-            // --- Learn Mode Logic (largely unchanged, but uses active set) ---
-            startLearnBtn.addEventListener('click', () => startLearnMode('all'));
-            studyStarredBtn.addEventListener('click', () => startLearnMode('starred'));
-            shuffleBtn.addEventListener('click', () => {
-                shuffleArray(allSets[activeSetId].cards);
-                saveState();
-                renderCardList();
-            });
-            headerExitBtn.addEventListener('click', exitLearnMode);
-            nextQuestionBtn.addEventListener('click', nextQuestion);
-            restartLearnBtn.addEventListener('click', () => startLearnMode(learnSession.studyMode));
-            continueBtn.addEventListener('click', continueLearning);
-            speakBtn.addEventListener('click', () => speak(questionText.textContent));
-
-            function startLearnMode(mode) {
-                learnSession.studyMode = mode;
-                const currentCards = allSets[activeSetId].cards;
-                let cardsToStudy = [];
-
-                if (mode === 'starred') {
-                    cardsToStudy = currentCards.filter(card => card.starred);
-                    if (cardsToStudy.length < 2) {
-                        alert("You need at least two starred cards to study them.");
-                        return;
-                    }
-                } else {
-                    cardsToStudy = [...currentCards];
-                }
-
-                // UI Transitions
-                document.getElementById('setManagementSection').classList.add('hidden');
-                creationSection.classList.add('hidden');
-                cardListSection.classList.add('hidden');
-
-                // Header Compact Mode
-                mainHeader.classList.add('compact-header');
-                headerExitBtn.classList.remove('hidden');
-
-                // Reduce container padding for learn mode
-                mainContainer.classList.remove('md:p-8');
-                mainContainer.classList.add('md:p-4');
-
-                learnSection.classList.remove('hidden');
-                completionScreen.classList.add('hidden');
-                summaryScreen.classList.add('hidden');
-                learnContent.classList.remove('hidden');
-                feedbackSection.classList.add('hidden');
-
-                learnSession.isActive = true;
-                learnSession.unseen = cardsToStudy;
-                learnSession.mastered = [];
-                learnSession.questionsAnsweredInSession = 0;
-                learnSession.batchHistory = [];
-                learnSession.consecutiveCorrect = {};
-
-                // Reset mastery tracking for this session (optional, or keep persistent if saved to card)
-                // For now, we'll use the card's existing masteryLevel if we want persistence, 
-                // but let's initialize local session tracking too.
-                cardsToStudy.forEach(c => {
-                    if (!c.masteryLevel) c.masteryLevel = 0;
-                });
-
-                shuffleArray(learnSession.unseen);
-                nextQuestion();
-            }
-
-            function exitLearnMode() {
-                learnSection.classList.add('hidden');
-
-                // UI Revert
-                mainHeader.classList.remove('compact-header');
-                headerExitBtn.classList.add('hidden');
-                mainContainer.classList.add('md:p-8');
-                mainContainer.classList.remove('md:p-4');
-
-                document.getElementById('setManagementSection').classList.remove('hidden');
-                creationSection.classList.remove('hidden');
-                cardListSection.classList.remove('hidden');
-                learnSession.isActive = false;
-                window.speechSynthesis.cancel();
-            }
-
-            function nextQuestion() {
-                if (learnSession.questionsAnsweredInSession > 0 && learnSession.questionsAnsweredInSession % 10 === 0 && learnSession.batchHistory.length > 0) {
-                    showSummary();
-                    return;
-                }
-                updateProgress();
-                feedbackSection.classList.add('hidden');
-                learnContent.classList.remove('hidden');
-                if (learnSession.unseen.length === 0) {
-                    learnContent.classList.add('hidden');
-                    completionScreen.classList.remove('hidden');
-                    return;
-                }
-                const questionCard = learnSession.unseen[0];
-                learnSession.currentQuestion = questionCard;
-
-                questionText.innerHTML = ''; // Clear previous content
-                renderClickableText(questionCard.definition, questionText);
-
-                if (ttsState.autoRead) {
-                    speak(questionCard.definition);
-                }
-                generateOptions(questionCard);
-            }
-
-            function renderClickableText(text, container) {
-                const words = text.split(/\s+/);
-                words.forEach((word, index) => {
-                    const span = document.createElement('span');
-                    span.textContent = word + ' ';
-                    span.className = 'clickable-word';
-                    span.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        showDictionaryDefinition(word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ""), e.clientX, e.clientY);
-                    });
-                    container.appendChild(span);
-                });
-            }
-
-            async function showDictionaryDefinition(word, x, y) {
-                // Remove existing popups
-                const existing = document.querySelector('.dictionary-popup');
-                if (existing) existing.remove();
-
-                const popup = document.createElement('div');
-                popup.className = 'dictionary-popup';
-                popup.textContent = 'Loading...';
-                popup.style.left = `${x}px`;
-                popup.style.top = `${y + 20}px`;
-                document.body.appendChild(popup);
-
-                // Close on click outside
-                const closePopup = (e) => {
-                    if (!popup.contains(e.target)) {
-                        popup.remove();
-                        document.removeEventListener('click', closePopup);
-                    }
-                };
-                setTimeout(() => document.addEventListener('click', closePopup), 100);
-
-                try {
-                    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-                    const data = await response.json();
-
-                    if (Array.isArray(data) && data.length > 0) {
-                        const entry = data[0];
-                        const meaning = entry.meanings[0];
-                        const definition = meaning.definitions[0].definition;
-                        popup.innerHTML = `
-                            <strong class="block text-indigo-600 mb-1">${entry.word}</strong>
-                            <span class="text-xs text-slate-500 italic block mb-1">${meaning.partOfSpeech}</span>
-                            <p>${definition}</p>
-                        `;
-                    } else {
-                        popup.textContent = `No definition found for "${word}".`;
-                    }
-                } catch (error) {
-                    popup.textContent = 'Error fetching definition.';
-                }
-            }
-
-            function generateOptions(correctCard) {
-                answerOptions.innerHTML = '';
-                let options = [correctCard];
-                const allCards = allSets[activeSetId].cards;
-                const distractors = allCards.filter(card => card.id !== correctCard.id);
-                shuffleArray(distractors);
-                const numOptions = Math.min(allCards.length, 4);
-                for (let i = 0; i < numOptions - 1; i++) {
-                    if (distractors[i]) options.push(distractors[i]);
-                }
-                shuffleArray(options);
-                options.forEach(option => {
-                    const button = document.createElement('button');
-                    button.className = "w-full text-left p-4 border-2 border-slate-300 rounded-lg hover:bg-slate-100 hover:border-indigo-500 transition";
-                    button.textContent = option.term;
-                    button.dataset.id = option.id;
-                    button.addEventListener('click', handleAnswer);
-                    answerOptions.appendChild(button);
-                });
-            }
-
-            function handleAnswer(e) {
-                const selectedButton = e.target;
-                const selectedId = Number(selectedButton.dataset.id);
-                const correctId = learnSession.currentQuestion.id;
-                const isCorrect = selectedId === correctId;
-                learnSession.questionsAnsweredInSession++;
-                learnSession.batchHistory.push({ card: learnSession.currentQuestion, correct: isCorrect });
-
-                answerOptions.querySelectorAll('button').forEach(btn => {
-                    btn.disabled = true;
-                    btn.classList.remove('hover:bg-slate-100', 'hover:border-indigo-500'); // Remove hover effects
-                    const btnId = Number(btn.dataset.id);
-                    if (btnId === correctId) {
-                        btn.classList.remove('border-slate-300');
-                        btn.classList.add('feedback-correct');
-                    } else if (btnId === selectedId) {
-                        btn.classList.remove('border-slate-300');
-                        btn.classList.add('feedback-incorrect');
-                    }
-                });
-
-                const currentCard = learnSession.currentQuestion;
-
-                if (isCorrect) {
-                    // Increment mastery
-                    currentCard.masteryLevel = (currentCard.masteryLevel || 0) + 1;
-
-                    const masteredCard = learnSession.unseen.shift();
-                    learnSession.mastered.push(masteredCard);
-
-                    // Animate progress bar
-                    progressBar.classList.add('progress-animating');
-                    setTimeout(() => progressBar.classList.remove('progress-animating'), 1000);
-
-                    setTimeout(nextQuestion, 1000); // Slightly longer delay to see feedback
-                } else {
-                    // Reset mastery on failure
-                    currentCard.masteryLevel = 0;
-
-                    showIncorrectFeedback();
-
-                    const incorrectCard = learnSession.unseen.shift();
-
-                    // Insert at a random position between 2 and 5 (or end if shorter) to make it appear "later" but not "last"
-                    const insertIndex = Math.min(learnSession.unseen.length, Math.floor(Math.random() * 3) + 2);
-                    learnSession.unseen.splice(insertIndex, 0, incorrectCard);
-                }
-                saveState(); // Save mastery levels
-            }
-
-            function showIncorrectFeedback() {
-                setTimeout(() => {
-                    learnContent.classList.add('hidden');
-                    feedbackSection.classList.remove('hidden');
-                    feedbackTitle.textContent = "Not quite...";
-                    feedbackTitle.className = "text-xl font-bold text-red-600";
-                    feedbackText.textContent = `The correct term was "${learnSession.currentQuestion.term}". We'll ask this one again later.`;
-                }, 800);
-            }
-
-            function showSummary() {
-                learnContent.classList.add('hidden');
-                feedbackSection.classList.add('hidden');
-                summaryScreen.classList.remove('hidden');
-                const correctCount = learnSession.batchHistory.filter(item => item.correct).length;
-                const missedCount = learnSession.batchHistory.length - correctCount;
-                summaryCorrect.textContent = correctCount;
-                summaryMissed.textContent = missedCount;
-                summaryList.innerHTML = learnSession.batchHistory.map(item => `
-                    <div class="flex justify-between items-center p-2 rounded ${item.correct ? 'bg-green-50' : 'bg-red-50'} my-1">
-                        <div>
-                            <p class="font-medium text-slate-800">${item.card.term}</p>
-                            <p class="text-sm text-slate-500">${item.card.definition}</p>
-                        </div>
-                        ${item.correct ? '<span class="text-green-600 font-semibold">Correct</span>' : '<span class="text-red-600 font-semibold">Missed</span>'}
-                    </div>
-                `).join('');
-            }
-
-            function continueLearning() {
-                learnSession.batchHistory = [];
-                summaryScreen.classList.add('hidden');
-                nextQuestion();
-            }
-
-            function updateProgress() {
-                const totalCards = learnSession.unseen.length + learnSession.mastered.length;
-                const masteredCount = learnSession.mastered.length;
-                const progressPercentage = totalCards > 0 ? (masteredCount / totalCards) * 100 : 0;
-                progressBar.style.width = `${progressPercentage}%`;
-                progressText.textContent = `${masteredCount} / ${totalCards}`;
-            }
-
-            // --- Utility Functions ---
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-            }
-
-            // --- TTS Functions ---
-            async function speak(text) {
-                if (!text) return;
-
-                // Cancel existing speech
-                if (ttsState.currentAudio) {
-                    ttsState.currentAudio.pause();
-                    ttsState.currentAudio = null;
-                }
-                window.speechSynthesis.cancel();
-                speakBtn.classList.remove('speaking');
-
-                // Check if we should stop (toggle behavior)
-                if (ttsState.isSpeaking) {
-                    ttsState.isSpeaking = false;
-                    return;
-                }
-
-                ttsState.isSpeaking = true;
-                speakBtn.classList.add('speaking');
-
-                // Try ElevenLabs if key exists AND usePremium is true
-                if (ttsState.usePremium && ttsState.elevenLabsKey && ttsState.elevenLabsKey.length > 10) {
-                    await speakElevenLabs(text);
-                } else {
-                    speakBrowserTTS(text);
-                }
-            }
-
-            async function speakElevenLabs(text) {
-                const voiceId = ttsState.selectedVoiceId;
-                const cacheKey = `${text}-${voiceId}`;
-
-                // Check cache
-                if (ttsState.audioCache.has(cacheKey)) {
-                    playAudioBlob(ttsState.audioCache.get(cacheKey));
-                    return;
-                }
-
-                try {
-                    const response = await fetch(
-                        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`,
-                        {
-                            method: "POST",
-                            headers: {
-                                "xi-api-key": ttsState.elevenLabsKey,
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                text,
-                                model_id: "eleven_turbo_v2_5",
-                                voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-                            }),
-                        }
-                    );
-
-                    if (!response.ok) throw new Error("ElevenLabs error");
-
-                    const audioBlob = await response.blob();
-                    ttsState.audioCache.set(cacheKey, audioBlob);
-                    playAudioBlob(audioBlob);
-                } catch (err) {
-                    console.warn("ElevenLabs failed, falling back to browser TTS", err);
-                    speakBrowserTTS(text);
-                }
-            }
-
-            function playAudioBlob(blob) {
-                const audioUrl = URL.createObjectURL(blob);
-                const audio = new Audio(audioUrl);
-                ttsState.currentAudio = audio;
-
-                audio.onended = () => {
-                    speakBtn.classList.remove('speaking');
-                    ttsState.isSpeaking = false;
-                    ttsState.currentAudio = null;
-                };
-
-                audio.play().catch(e => {
-                    console.error("Audio play error", e);
-                    speakBtn.classList.remove('speaking');
-                    ttsState.isSpeaking = false;
-                });
-            }
-
-            function speakBrowserTTS(text) {
-                if (!('speechSynthesis' in window)) {
-                    console.log("Text-to-speech not supported.");
-                    speakBtn.classList.remove('speaking');
-                    ttsState.isSpeaking = false;
-                    return;
-                }
-
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 0.9; // Slightly slower for learning
-
-                // Voice Selection Logic (Microsoft Aria/Jenny priority)
-                const voices = window.speechSynthesis.getVoices();
-                const preferredVoice = voices.find(v => v.name.includes("Microsoft Aria Online (Natural)")) ||
-                    voices.find(v => v.name.includes("Microsoft Jenny Online (Natural)")) ||
-                    voices.find(v => v.name.includes("Google US English")) ||
-                    voices.find(v => v.lang === 'en-US' && v.name.includes("Female")) ||
-                    voices.find(v => v.lang === 'en-US');
-
-                if (preferredVoice) utterance.voice = preferredVoice;
-
-                utterance.onend = () => {
-                    speakBtn.classList.remove('speaking');
-                    ttsState.isSpeaking = false;
-                };
-
-                utterance.onerror = () => {
-                    speakBtn.classList.remove('speaking');
-                    ttsState.isSpeaking = false;
-                };
-
-                window.speechSynthesis.speak(utterance);
-            }
-        });
-    </script>
+    <!-- Keyboard Settings Modal -->
+    <div id="keyboardSettingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+        <div class="modal-overlay absolute inset-0"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-slate-800">Keyboard Shortcuts</h2>
+                <button id="keyboardSettingsCloseBtn"
+                    class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Flip Card</label>
+                    <input type="text" data-key="flip" data-default="Space" value="Space"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Previous Card</label>
+                    <input type="text" data-key="prev" data-default="ArrowLeft" value="ArrowLeft"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Next Card</label>
+                    <input type="text" data-key="next" data-default="ArrowRight" value="ArrowRight"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <hr class="border-slate-200 my-4">
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Grade: Again</label>
+                    <input type="text" data-key="grade1" data-default="1" value="1"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Grade: Hard</label>
+                    <input type="text" data-key="grade2" data-default="2" value="2"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Grade: Good</label>
+                    <input type="text" data-key="grade3" data-default="3" value="3"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Grade: Easy</label>
+                    <input type="text" data-key="grade4" data-default="4" value="4"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <hr class="border-slate-200 my-4">
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Toggle Star</label>
+                    <input type="text" data-key="star" data-default="s" value="s"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label class="text-sm text-slate-600">Listen (TTS)</label>
+                    <input type="text" data-key="listen" data-default="l" value="l"
+                        class="w-24 p-2 text-center border border-slate-300 rounded-lg text-sm font-mono">
+                </div>
+            </div>
+
+            <button id="saveKeyBindingsBtn"
+                class="w-full mt-6 bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md">
+                Save Shortcuts
+            </button>
+        </div>
+    </div>
+
+    <!-- ES Module Script -->
+    <script type="module" src="src/app.js"></script>
 </body>
 
 </html>
